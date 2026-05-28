@@ -21,8 +21,15 @@ namespace _game._GameViews {
         public void AddItem(ItemView item) {
             if (_items.Count >= itemSlots.Count) return;
 
-            item.transform.SetParent(itemSlots[_items.Count].transform);
-            item.transform.localPosition = Vector3.zero;
+            var slot = itemSlots[_items.Count];
+            item.transform.SetParent(slot.transform);
+            
+            // Enforce Z position and scale
+            item.transform.localPosition = new Vector3(0, 0, -3f);
+            var localScale = item.transform.localScale;
+            localScale.z = 1f;
+            item.transform.localScale = localScale;
+            
             _items.Add(item);
         }
 

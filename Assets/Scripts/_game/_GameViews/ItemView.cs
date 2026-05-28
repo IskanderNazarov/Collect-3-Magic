@@ -12,6 +12,16 @@ namespace _game._GameViews {
         public void Setup(ItemType type, Sprite sprite) {
             Type = type;
             spriteRenderer.sprite = sprite;
+            
+            // Ensure proper layering/distance for clicks
+            var localPos = transform.localPosition;
+            localPos.z = -3f;
+            transform.localPosition = localPos;
+            
+            var localScale = transform.localScale;
+            localScale.z = 1f;
+            transform.localScale = localScale;
+
             if (itemCollider != null) {
                 itemCollider.enabled = true;
             }
@@ -24,6 +34,7 @@ namespace _game._GameViews {
         }
 
         private void OnMouseDown() {
+            print("OnMouseDown");
             OnClicked?.Invoke(this);
         }
     }
