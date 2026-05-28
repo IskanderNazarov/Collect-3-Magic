@@ -4,6 +4,7 @@
     "com.nazzalex.corelib": "file:/Users/alexander/Documents/UnityProjects/_Test/__CoreLib",
     "com.playgama.bridge": "https://github.com/playgama/bridge-unity.git",
     "com.unity.2d.sprite": "1.0.0",
+    "com.unity.ai.assistant": "2.9.0-pre.2",
     "com.unity.ai.navigation": "2.0.9",
     "com.unity.ide.rider": "3.0.38",
     "com.unity.nuget.newtonsoft-json": "3.2.1",

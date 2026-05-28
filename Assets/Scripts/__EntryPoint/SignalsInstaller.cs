@@ -1,3 +1,4 @@
+using _Signals;
 using Zenject;
 
 namespace _Zenject {
@@ -5,6 +6,12 @@ namespace _Zenject {
 
         public override void InstallBindings() {
             SignalBusInstaller.Install(Container);
+
+            Container.DeclareSignal<LevelStartedSignal>();
+            Container.DeclareSignal<LevelCompletedSignal>();
+            Container.DeclareSignal<LevelFailedSignal>();
+            Container.DeclareSignal<ItemCollectedSignal>();
+            Container.DeclareSignal<CoinsChangedSignal>();
         }
     }
 }

@@ -1,16 +1,16 @@
 using __CoreGameLib._Scripts._Services._Leaderboards;
-using _Infrastructure.Services._Leaderboards;
+using _game;
 using UnityEngine;
 using Zenject;
 
-namespace _Infrastructure.Services {
+namespace _Bootstrappers {
     public class Bootstrapper_MainScene : MonoBehaviour {
-        //[Inject] private GameManager _gameManager;
+        [Inject] private GameManager _gameManager;
         [Inject] private ILeaderboardService _leaderboardService;
 
 
         private void Start() {
-            //_gameManager.Initialize();
+            _gameManager.Initialize();
         }
     }
 }
