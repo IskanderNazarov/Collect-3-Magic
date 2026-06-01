@@ -15,6 +15,6 @@ MonoBehaviour:
   totalItemsCount: 30
   availableTypes: 0000000001000000020000000300000004000000050000000600000007000000
   containerCount: 3
-  slotCount: 0
+  slotCount: 7
   bubbleSpawnWidth: 1
   spawnHeightOffset: 10

@@ -27,9 +27,9 @@ namespace _game {
         private const float TravelDuration = 0.5f;
 
         public GameplayController(
-            SignalBus signalBus, 
-            GameplayView view, 
-            LevelConfig levelConfig, 
+            SignalBus signalBus,
+            GameplayView view,
+            LevelConfig levelConfig,
             GameplayConfig gameplayConfig) {
             _signalBus = signalBus;
             _view = view;
@@ -88,12 +88,13 @@ namespace _game {
                     });
 
                     var itemView = _itemPool.Get();
-                    itemView.Setup(type, _gameplayConfig.GetSprite(type));
+                    var data = _gameplayConfig.GetItemData(type);
+                    itemView.Setup(type, data.sprite, data.color);
                     itemView.OnClicked = HandleItemClick;
                     bubbleView.AddItem(itemView);
                 }
             }
-            
+
             InitializeContainers();
             InitializeSlots();
         }
@@ -106,15 +107,26 @@ namespace _game {
                     var targetType = _levelConfig.availableTypes[Random.Range(0, _levelConfig.availableTypes.Count)];
                     var model = new ContainerModel(targetType);
                     _model.Containers.Add(model);
-                    view.SetTarget(targetType, _gameplayConfig.GetSprite(targetType));
-                } else {
+                    var data = _gameplayConfig.GetItemData(targetType);
+                    view.SetTarget(targetType, data.sprite, data.color);
+                }
+                else {
                     view.gameObject.SetActive(false);
                 }
             }
         }
 
         private void InitializeSlots() {
-            for (var i = 0; i < _levelConfig.slotCount; i++) {
+            var count = _levelConfig.slotCount;
+            if (count <= 0) {
+                count = _view.Slots.Count;
+                Debug.LogWarning($"[GameplayController] slotCount in LevelConfig is {_levelConfig.slotCount}. Fallback to View slots count: {count}");
+            }
+
+            // Ensure we don't exceed the number of physical SlotViews assigned in GameplayView
+            count = Math.Min(count, _view.Slots.Count);
+
+            for (var i = 0; i < count; i++) {
                 _model.Slots.Add(new SlotModel(i));
             }
         }
@@ -130,27 +142,30 @@ namespace _game {
             if (targetContainerView != null) {
                 var containerModel = _model.Containers[containerIndex];
                 var targetPos = targetContainerView.GetPositionForIndex(containerModel.CurrentCount);
-                
+
                 MoveItemToTarget(itemView, targetPos, () => {
                     containerModel.AddItem();
                     if (containerModel.IsFull) {
                         HandleContainerMatch(containerModel, targetContainerView);
                     }
+
                     _itemPool.Release(itemView);
                 });
-            } else {
+            }
+            else {
                 var slotIndex = -1;
                 var targetSlotView = FindFreeSlot(out slotIndex);
-                
+
                 if (targetSlotView != null) {
                     var slotModel = _model.Slots[slotIndex];
                     slotModel.Occupy(itemView.Type);
                     var targetPos = targetSlotView.transform.position;
-                    
+
                     MoveItemToTarget(itemView, targetPos, () => {
                         // In a more complex game, we might check for matches in slots here
                     });
-                } else {
+                }
+                else {
                     _signalBus.Fire<LevelFailedSignal>();
                     return;
                 }
@@ -173,11 +188,12 @@ namespace _game {
         private void UpdateModelOnItemCollected(ItemView itemView, BubbleView bubbleView) {
             // Find the logical bubble that matches the physical one
             // In a real-world scenario, we'd have a mapping, but for now we look for a bubble containing this type
-            var bubbleModel = _model.Bubbles.FirstOrDefault(bm => bm.Items.Any(im => im.Type == itemView.Type && !im.IsCollected));
+            var bubbleModel =
+                _model.Bubbles.FirstOrDefault(bm => bm.Items.Any(im => im.Type == itemView.Type && !im.IsCollected));
             if (bubbleModel != null) {
                 var itemModel = bubbleModel.Items.First(im => im.Type == itemView.Type && !im.IsCollected);
                 itemModel.IsCollected = true;
-                
+
                 if (bubbleModel.Items.All(im => im.IsCollected)) {
                     _model.Bubbles.Remove(bubbleModel);
                 }
@@ -191,6 +207,7 @@ namespace _game {
                     return _view.Containers[i];
                 }
             }
+
             index = -1;
             return null;
         }
@@ -202,14 +219,15 @@ namespace _game {
                     return _view.Slots[i];
                 }
             }
+
             index = -1;
             return null;
         }
 
         private void MoveItemToTarget(ItemView item, Vector3 targetPos, Action onComplete) {
             item.transform.SetParent(_view.PoolContainer);
-            item.DisableInteraction(); 
-            
+            item.DisableInteraction();
+
             item.transform.DOMove(targetPos, TravelDuration).SetEase(Ease.OutQuad).OnComplete(() => {
                 onComplete?.Invoke();
             });
@@ -218,7 +236,8 @@ namespace _game {
         private void HandleContainerMatch(ContainerModel model, ContainerView view) {
             var newType = _levelConfig.availableTypes[Random.Range(0, _levelConfig.availableTypes.Count)];
             model.Reset(newType);
-            view.SetTarget(newType, _gameplayConfig.GetSprite(newType));
+            var data = _gameplayConfig.GetItemData(newType);
+            view.SetTarget(newType, data.sprite, data.color);
         }
 
         private void CheckWinCondition() {
@@ -226,10 +245,5 @@ namespace _game {
                 _signalBus.Fire<LevelCompletedSignal>();
             }
         }
-}
-
-
-
-
-
+    }
 }
