@@ -1,21 +1,30 @@
 namespace _game._GameModel {
     public class ContainerModel {
         public ItemType TargetType { get; private set; }
-        public int CurrentCount { get; private set; }
-        public bool IsFull => CurrentCount >= 3;
+        public int ReservedCount { get; private set; }
+        public int LandedCount { get; private set; }
+        
+        public bool IsFull => ReservedCount >= 3;
+        public bool AllLanded => LandedCount >= 3;
 
         public ContainerModel(ItemType targetType) {
             TargetType = targetType;
-            CurrentCount = 0;
+            ReservedCount = 0;
+            LandedCount = 0;
         }
 
-        public void AddItem() {
-            CurrentCount++;
+        public void ReserveItem() {
+            ReservedCount++;
+        }
+
+        public void ItemLanded() {
+            LandedCount++;
         }
 
         public void Reset(ItemType newType) {
             TargetType = newType;
-            CurrentCount = 0;
+            ReservedCount = 0;
+            LandedCount = 0;
         }
     }
 }

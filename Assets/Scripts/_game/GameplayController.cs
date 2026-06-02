@@ -6,10 +6,10 @@ using _game._GameModel;
 using _game._GameViews;
 using _Infrastructure;
 using _Signals;
+using DG.Tweening;
 using UnityEngine;
 using Zenject;
 using Random = UnityEngine.Random;
-using DG.Tweening;
 
 namespace _game {
     public class GameplayController {
@@ -39,6 +39,7 @@ namespace _game {
 
         public void Initialize() {
             InitializePools();
+            _view.SlotsDock.Initialize(_view.Slots);
             GenerateLevel();
         }
 
@@ -96,7 +97,6 @@ namespace _game {
             }
 
             InitializeContainers();
-            InitializeSlots();
         }
 
         private void InitializeContainers() {
@@ -108,26 +108,11 @@ namespace _game {
                     var model = new ContainerModel(targetType);
                     _model.Containers.Add(model);
                     var data = _gameplayConfig.GetItemData(targetType);
-                    view.SetTarget(targetType, data.sprite, data.color);
+                    view.SetTarget(data);
                 }
                 else {
                     view.gameObject.SetActive(false);
                 }
-            }
-        }
-
-        private void InitializeSlots() {
-            var count = _levelConfig.slotCount;
-            if (count <= 0) {
-                count = _view.Slots.Count;
-                Debug.LogWarning($"[GameplayController] slotCount in LevelConfig is {_levelConfig.slotCount}. Fallback to View slots count: {count}");
-            }
-
-            // Ensure we don't exceed the number of physical SlotViews assigned in GameplayView
-            count = Math.Min(count, _view.Slots.Count);
-
-            for (var i = 0; i < count; i++) {
-                _model.Slots.Add(new SlotModel(i));
             }
         }
 
@@ -140,32 +125,14 @@ namespace _game {
             var targetContainerView = FindTargetContainer(itemView.Type, out containerIndex);
 
             if (targetContainerView != null) {
-                var containerModel = _model.Containers[containerIndex];
-                var targetPos = targetContainerView.GetPositionForIndex(containerModel.CurrentCount);
-
-                MoveItemToTarget(itemView, targetPos, () => {
-                    containerModel.AddItem();
-                    if (containerModel.IsFull) {
-                        HandleContainerMatch(containerModel, targetContainerView);
-                    }
-
-                    _itemPool.Release(itemView);
-                });
+                ProcessItemToContainer(itemView, targetContainerView, _model.Containers[containerIndex]);
             }
             else {
-                var slotIndex = -1;
-                var targetSlotView = FindFreeSlot(out slotIndex);
+                var added = _view.SlotsDock.TryAddItem(itemView, TravelDuration, () => {
+                    // Item reached dock
+                });
 
-                if (targetSlotView != null) {
-                    var slotModel = _model.Slots[slotIndex];
-                    slotModel.Occupy(itemView.Type);
-                    var targetPos = targetSlotView.transform.position;
-
-                    MoveItemToTarget(itemView, targetPos, () => {
-                        // In a more complex game, we might check for matches in slots here
-                    });
-                }
-                else {
+                if (!added) {
                     _signalBus.Fire<LevelFailedSignal>();
                     return;
                 }
@@ -185,9 +152,45 @@ namespace _game {
             CheckWinCondition();
         }
 
+        private void ProcessItemToContainer(ItemView itemView, ContainerView containerView, ContainerModel containerModel) {
+            var index = containerModel.ReservedCount;
+            var targetPos = containerView.GetPositionForIndex(index);
+            var targetScale = containerView.GetScaleForIndex(index);
+            
+            containerModel.ReserveItem();
+
+            MoveItemToTarget(itemView, targetPos, targetScale, () => {
+                containerModel.ItemLanded();
+                
+                var data = _gameplayConfig.GetItemData(itemView.Type);
+                containerView.ShowLandedItem(index, data);
+                
+                if (containerModel.AllLanded) {
+                    HandleContainerMatch(containerModel, containerView);
+                }
+                _itemPool.Release(itemView);
+            });
+        }
+
+        private void CheckSlotsDockForMatches() {
+            for (var i = 0; i < _model.Containers.Count; i++) {
+                var containerModel = _model.Containers[i];
+                var containerView = _view.Containers[i];
+
+                if (!containerView.gameObject.activeSelf) continue;
+
+                var needed = 3 - containerModel.ReservedCount;
+                if (needed <= 0) continue;
+
+                var itemsFromDock = _view.SlotsDock.ExtractItems(containerModel.TargetType, needed);
+
+                foreach (var dockItem in itemsFromDock) {
+                    ProcessItemToContainer(dockItem, containerView, containerModel);
+                }
+            }
+        }
+
         private void UpdateModelOnItemCollected(ItemView itemView, BubbleView bubbleView) {
-            // Find the logical bubble that matches the physical one
-            // In a real-world scenario, we'd have a mapping, but for now we look for a bubble containing this type
             var bubbleModel =
                 _model.Bubbles.FirstOrDefault(bm => bm.Items.Any(im => im.Type == itemView.Type && !im.IsCollected));
             if (bubbleModel != null) {
@@ -212,36 +215,32 @@ namespace _game {
             return null;
         }
 
-        private SlotView FindFreeSlot(out int index) {
-            for (var i = 0; i < _model.Slots.Count; i++) {
-                if (!_model.Slots[i].IsOccupied) {
-                    index = i;
-                    return _view.Slots[i];
-                }
-            }
-
-            index = -1;
-            return null;
-        }
-
-        private void MoveItemToTarget(ItemView item, Vector3 targetPos, Action onComplete) {
+        private void MoveItemToTarget(ItemView item, Vector3 targetPos, Vector3 targetScale, Action onComplete) {
             item.transform.SetParent(_view.PoolContainer);
             item.DisableInteraction();
 
-            item.transform.DOMove(targetPos, TravelDuration).SetEase(Ease.OutQuad).OnComplete(() => {
+            // ANIMATION CORE: Fly and Scale
+            item.transform.DOMove(targetPos, TravelDuration).SetEase(Ease.OutQuad);
+            item.transform.DOScale(targetScale, TravelDuration).SetEase(Ease.OutQuad).OnComplete(() => {
                 onComplete?.Invoke();
             });
         }
 
         private void HandleContainerMatch(ContainerModel model, ContainerView view) {
+            _model.CompletedMatchesCount++;
+
             var newType = _levelConfig.availableTypes[Random.Range(0, _levelConfig.availableTypes.Count)];
             model.Reset(newType);
             var data = _gameplayConfig.GetItemData(newType);
-            view.SetTarget(newType, data.sprite, data.color);
+            view.SetTarget(data);
+
+            // After reset, check if any items in dock match the new target
+            CheckSlotsDockForMatches();
         }
 
         private void CheckWinCondition() {
-            if (_model.Bubbles.Count == 0 && _model.Slots.All(s => !s.IsOccupied)) {
+            var targetMatches = _levelConfig.totalItemsCount / 3;
+            if (_model.CompletedMatchesCount >= targetMatches) {
                 _signalBus.Fire<LevelCompletedSignal>();
             }
         }

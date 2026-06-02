@@ -43,7 +43,6 @@ namespace _game._GameViews {
         }
 
         private void OnMouseDown() {
-            print("OnMouseDown");
             OnClicked?.Invoke(this);
         }
     }

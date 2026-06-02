@@ -139,7 +139,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Circle
+      name: proj_circle
       rect:
         serializedVersion: 2
         x: 0
@@ -199,6 +199,7 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       Circle: -2413806693520163455
+      proj_circle: -2413806693520163455
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

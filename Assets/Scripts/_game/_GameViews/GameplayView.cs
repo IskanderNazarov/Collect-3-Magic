@@ -13,5 +13,6 @@ namespace _game._GameViews {
         public BucketView Bucket;
         public List<ContainerView> Containers;
         public List<SlotView> Slots;
-    }
+        public SlotsDock SlotsDock;
+}
 }
