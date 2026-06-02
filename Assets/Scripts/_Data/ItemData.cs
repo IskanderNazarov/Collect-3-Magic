@@ -7,5 +7,6 @@ namespace _Data {
     public class ItemData {
         public ItemType type;
         public Sprite sprite;
+        public Color color;
     }
 }

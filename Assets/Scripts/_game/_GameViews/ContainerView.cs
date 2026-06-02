@@ -15,10 +15,11 @@ namespace _game._GameViews {
             return transform.position;
         }
 
-        public void SetTarget(ItemType type, Sprite icon) {
+        public void SetTarget(ItemType type, Sprite icon, Color color) {
             TargetType = type;
             if (targetIconRenderer != null) {
                 targetIconRenderer.sprite = icon;
+                targetIconRenderer.color = color;
             }
         }
     }

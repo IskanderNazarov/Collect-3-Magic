@@ -9,9 +9,10 @@ namespace _game._GameViews {
         public ItemType Type { get; private set; }
         public Action<ItemView> OnClicked;
 
-        public void Setup(ItemType type, Sprite sprite) {
+        public void Setup(ItemType type, Sprite sprite, Color color) {
             Type = type;
             spriteRenderer.sprite = sprite;
+            spriteRenderer.color = color;
             
             // Ensure proper layering/distance for clicks
             var localPos = transform.localPosition;
@@ -21,6 +22,14 @@ namespace _game._GameViews {
             var localScale = transform.localScale;
             localScale.z = 1f;
             transform.localScale = localScale;
+
+            // Ensure Kinematic Rigidbody2D for independent click detection from parent bubbles
+            var rb = GetComponent<Rigidbody2D>();
+            if (rb == null) {
+                rb = gameObject.AddComponent<Rigidbody2D>();
+            }
+            rb.bodyType = RigidbodyType2D.Kinematic;
+            rb.simulated = true;
 
             if (itemCollider != null) {
                 itemCollider.enabled = true;
