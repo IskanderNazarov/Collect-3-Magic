@@ -1,11 +1,17 @@
 using System.Collections.Generic;
 using _Data;
+using DG.Tweening;
 using UnityEngine;
 
 namespace _game._GameViews {
     public class ContainerView : MonoBehaviour {
         [SerializeField] private SpriteRenderer _targetIconRenderer;
+        [SerializeField] private SpriteRenderer _critterIcon;
         [SerializeField] private List<Transform> _itemsPositions;
+        
+        [Header("Animations")]
+        [SerializeField] private float _scaleDuration = 0.3f;
+        [SerializeField] private Ease _scaleEase = Ease.OutBack;
 
         public ItemType TargetType { get; private set; }
 
@@ -35,14 +41,44 @@ namespace _game._GameViews {
             return Vector3.one;
         }
 
-        public void SetTarget(ItemData data) {
-            TargetType = data.type;
+        public Sequence SetTarget(CritterData critterData, ItemData itemData) {
+            TargetType = itemData.type;
+            
+            // Swap animation sequence
+            Sequence swapSequence = DOTween.Sequence();
+            
+            // 1. Scale down current
+            swapSequence.Append(_critterIcon.transform.DOScale(0, _scaleDuration).SetEase(Ease.InBack));
             if (_targetIconRenderer != null) {
-                _targetIconRenderer.sprite = data.sprite;
-                _targetIconRenderer.color = data.color;
+                swapSequence.Join(_targetIconRenderer.transform.parent.DOScale(0, _scaleDuration).SetEase(Ease.InBack));
             }
 
-            // Clear existing visuals on target change
+            // 2. Change visuals and scale up
+            swapSequence.AppendCallback(() => {
+                _critterIcon.sprite = critterData.CritterSprite;
+                if (_targetIconRenderer != null) {
+                    _targetIconRenderer.sprite = itemData.sprite;
+                }
+                // Clear existing items visuals
+                foreach (var renderer in _itemRenderers) {
+                    renderer.gameObject.SetActive(false);
+                }
+            });
+
+            swapSequence.Append(_critterIcon.transform.DOScale(1, _scaleDuration).SetEase(_scaleEase));
+            if (_targetIconRenderer != null) {
+                swapSequence.Join(_targetIconRenderer.transform.parent.DOScale(1, _scaleDuration).SetEase(_scaleEase));
+            }
+
+            return swapSequence;
+        }
+
+        public void ClearTarget() {
+            TargetType = ItemType.None;
+            _critterIcon.transform.DOScale(0, _scaleDuration).SetEase(Ease.InBack);
+            if (_targetIconRenderer != null) {
+                _targetIconRenderer.transform.parent.DOScale(0, _scaleDuration).SetEase(Ease.InBack);
+            }
             foreach (var renderer in _itemRenderers) {
                 renderer.gameObject.SetActive(false);
             }
@@ -52,7 +88,6 @@ namespace _game._GameViews {
             if (index >= 0 && index < _itemRenderers.Count) {
                 var renderer = _itemRenderers[index];
                 renderer.sprite = data.sprite;
-                renderer.color = data.color;
                 renderer.gameObject.SetActive(true);
             }
         }

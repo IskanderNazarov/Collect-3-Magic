@@ -51,7 +51,7 @@ TagManager:
   - name: Gameplay
     uniqueID: 823219875
     locked: 0
-  - name: Layer_3
+  - name: DockLayer
     uniqueID: 821192417
     locked: 0
   - name: Top

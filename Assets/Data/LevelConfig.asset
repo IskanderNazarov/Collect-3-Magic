@@ -13,8 +13,18 @@ MonoBehaviour:
   m_Name: LevelConfig
   m_EditorClassIdentifier: 
   totalItemsCount: 30
-  availableTypes: 0000000001000000020000000300000004000000050000000600000007000000
+  availableTypes: 01000000020000000400000008000000100000002000000040000000
   containerCount: 3
   slotCount: 7
   bubbleSpawnWidth: 1
   spawnHeightOffset: 10
+  bubbleWeights:
+  - size: 0
+    weight: 0.2
+    itemsCount: 1
+  - size: 2
+    weight: 0.6
+    itemsCount: 3
+  - size: 3
+    weight: 0.2
+    itemsCount: 4

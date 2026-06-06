@@ -1,13 +1,23 @@
-using Core._Services._Saving;
-using core.purchasing;
+using System;
 using UnityEngine;
-using Zenject;
-public class GameUI : MonoBehaviour {
+using UnityEngine.UI;
 
+namespace _UI {
+    public class GameUI : MonoBehaviour {
+    
+        [SerializeField] private Button _changeBgBtn;
+        [SerializeField] private SpriteRenderer _spriteRendererMain;
+        [SerializeField] private SpriteRenderer _spriteRendererTop;
 
-    [Inject]
-    private void Construct(IDataSaver dataSaver, GameConfig gameConfig,
-        RewardHandler rewardHandler) {
+        private int _counter;
+        private void Start() {
+            _changeBgBtn.onClick.AddListener(() => {
+                _counter++;
+                var isFistBg = _counter % 2 == 0;
+                _spriteRendererMain.gameObject.SetActive(isFistBg);
+                _spriteRendererTop.gameObject.SetActive(!isFistBg);
+            });
+        }
+
     }
-
 }

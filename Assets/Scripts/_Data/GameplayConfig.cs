@@ -6,8 +6,18 @@ using UnityEngine;
 namespace _Data {
     [CreateAssetMenu(fileName = "GameplayConfig", menuName = "Scriptables/GameplayConfig")]
     public class GameplayConfig : ScriptableObject {
-        [Header("Item Visuals")] [SerializeField]
-        private List<ItemData> itemDataList;
+        [Header("Item Visuals")] 
+        [SerializeField] private List<ItemData> itemDataList;
+
+        [Header("Critter Visuals")]
+        [SerializeField] private List<CritterData> _critterDataList;
+
+        [Header("Sorting Layers")]
+        public string GameplaySortingLayer = "Gameplay";
+        public string TopSortingLayer = "Top";
+        public string DockSortingLayer = "DockLayer";
+
+        public List<CritterData> CritterDataList => _critterDataList;
 
         /// <summary>
         /// Возвращает спрайт для конкретного типа предмета.
@@ -31,9 +41,5 @@ namespace _Data {
 
             return data.sprite;
         }
-
-        // Сюда же можно добавить другие глобальные настройки:
-        // public float itemFlyDuration = 0.5f;
-        // public AnimationCurve flyCurve;
     }
 }

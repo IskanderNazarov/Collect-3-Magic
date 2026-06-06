@@ -69,6 +69,7 @@ namespace _UI {
 
         private int _debugPanelOpenCounter;
 
+        private int counter;
         public void EnableSolveButton() {
             _debugPanelOpenCounter++;
 #if UNITY_EDITOR

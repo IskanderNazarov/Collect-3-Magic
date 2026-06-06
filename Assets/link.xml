@@ -1,23 +1,13 @@
 <linker>
-    <assembly fullname="Assembly-CSharp">
-        <type fullname="_Infrastructure.CommonResources" preserve="all"/>
-        <type fullname="BoxFactory" preserve="all"/>
-        <type fullname="_game.ResourceCalculator" preserve="all"/>
-        <type fullname="_game.FXManager" preserve="all"/>
-        <type fullname="Services.ResourceManager" preserve="all"/>
-        <type fullname="GameConfig" preserve="all"/>
-        <type fullname="Services._TimeForResources.ResourceTimeHandler" preserve="all"/>
-        <type fullname="Services._TimeForResources.NectarConvertingTimer" preserve="all"/>
-        <type fullname="_Infrastructure.Services._TimeForResources.FlowerUpgradeTimer" preserve="all"/>;
-        <type fullname="Services.EventsHub" preserve="all"/>
-        <type fullname="_Infrastructure.FlowerUpgradeHandler" preserve="all"/>
-        <type fullname="Core._Services._Saving.IDataSaver" preserve="all"/>
-        <type fullname="Core._Services._Saving.PlaygamaDataSaver" preserve="all"/>
-        <type fullname="_Infrastructure.RemoteConfig" preserve="all"/>
-        <type fullname="Core._Services.SoundManager" preserve="all"/>
-        <type fullname="Core._Purchasing.PurchaseHandler" preserve="all"/>
-        <type fullname="Core._Purchasing.Purchaser" preserve="all"/>
-        <type fullname="Core._Services.CurrencyManager" preserve="all"/>
-        <type fullname="Localizer" preserve="all"/>
+    <assembly fullname="Assembly-CSharp" preserve="all">
     </assembly>
+    <assembly fullname="CoreLib" preserve="all">
+    </assembly>
+    <assembly fullname="FXAARuntime" preserve="all">
+    </assembly>
+    <assembly fullname="GamePush.Runtime" preserve="all">
+    </assembly>
+
+    <assembly fullname="Zenject" preserve="all"/>
 </linker>
+ 

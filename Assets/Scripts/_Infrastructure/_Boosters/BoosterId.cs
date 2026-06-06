@@ -1,7 +1,6 @@
 ﻿namespace __Gameplay {
     public enum BoosterId {
-        Hint = 0,   // Лампочка (одна стрелка)
-        Hammer = 1, // Молоток/Волшебная палочка (запуск нескольких)
-        Ruler = 2   // Указка/Линейка (показать все доступные)
+        Shuffle = 0,
+        Remover = 0,
     }
 }

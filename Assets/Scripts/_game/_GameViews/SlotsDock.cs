@@ -25,17 +25,28 @@ namespace _game._GameViews {
             
             item.transform.SetParent(transform);
             item.DisableInteraction();
-            
-            // Enforce Z and Scale
-            var localScale = item.transform.localScale;
-            localScale.z = 1f;
-            item.transform.localScale = localScale;
 
-            var targetPos = _slotPositions[targetIndex].transform.position;
+            // Reset physics state
+            var rb = item.GetComponent<Rigidbody2D>();
+            if (rb != null) {
+                rb.linearVelocity = Vector2.zero;
+                rb.angularVelocity = 0f;
+                rb.simulated = false;
+            }
+            
+            var targetSlot = _slotPositions[targetIndex];
+            //var targetPos = targetSlot.transform.position;
+            var targetPos = targetSlot.ItemTargetPos.position;
             // Add a small Z offset to be in front of the dock
             targetPos.z = transform.position.z - 3f;
 
-            item.transform.DOMove(targetPos, travelDuration).SetEase(Ease.OutQuad).OnComplete(() => {
+            //var targetScale = targetSlot.transform.localScale;
+            var targetScale = targetSlot.ItemTargetPos.localScale;
+
+            // ANIMATION CORE: Fly, Scale and Rotate to 0
+            item.transform.DOMove(targetPos, travelDuration).SetEase(Ease.OutQuad);
+            item.transform.DOScale(targetScale, travelDuration).SetEase(Ease.OutQuad);
+            item.transform.DORotate(Vector3.zero, travelDuration).SetEase(Ease.OutQuad).OnComplete(() => {
                 onComplete?.Invoke();
             });
             
@@ -58,9 +69,16 @@ namespace _game._GameViews {
 
         private void ShiftItems() {
             for (var i = 0; i < _items.Count; i++) {
-                var targetPos = _slotPositions[i].transform.position;
+                var targetSlot = _slotPositions[i];
+                var targetPos = targetSlot.transform.position;
                 targetPos.z = transform.position.z - 3f;
+                
+                var targetScale = targetSlot.transform.localScale;
+
                 _items[i].transform.DOMove(targetPos, 0.3f).SetEase(Ease.OutQuad);
+                _items[i].transform.DOScale(targetScale, 0.3f).SetEase(Ease.OutQuad);
+                // Rotation should already be zero, but we can enforce it just in case
+                _items[i].transform.DORotate(Vector3.zero, 0.3f).SetEase(Ease.OutQuad);
             }
         }
 

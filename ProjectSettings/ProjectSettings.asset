@@ -527,10 +527,14 @@ PlayerSettings:
   openGLRequireES32: 0
   m_TemplateCustomTags:
     BACKGROUND_IMAGE_FILE: 
+    GAMEREADY_AUTOCALL: False
     OVERLAY_BACKGROUND_COLOR: 
     PROGRESS_BAR_BACKGROUND_COLOR: 
     PROGRESS_BAR_BORDER_COLOR: 
     PROGRESS_BAR_FILL_COLOR: 
+    PROJECT_ID: 25539
+    SHOW_PRELOADER_AD: False
+    TOKEN: OD0rr6HE4OWS9Zq7QWdqDlzwioCP3T6d
   mobileMTRendering:
     Android: 1
     iPhone: 1
@@ -795,7 +799,7 @@ PlayerSettings:
   webGLDebugSymbols: 0
   webGLEmscriptenArgs: 
   webGLModulesDirectory: 
-  webGLTemplate: PROJECT:Bridge
+  webGLTemplate: PROJECT:GamePush
   webGLAnalyzeBuildSize: 0
   webGLUseEmbeddedResources: 0
   webGLCompressionFormat: 0

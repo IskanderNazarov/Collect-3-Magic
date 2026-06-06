@@ -1,24 +1,31 @@
 using System;
+using _Data;
 using UnityEngine;
 
 namespace _game._GameViews {
     public class ItemView : MonoBehaviour {
-        [SerializeField] private SpriteRenderer spriteRenderer;
-        [SerializeField] private Collider2D itemCollider;
-        
+        [SerializeField] private SpriteRenderer _spriteRenderer;
+        [SerializeField] private Collider2D _itemCollider;
+
         public ItemType Type { get; private set; }
         public Action<ItemView> OnClicked;
 
-        public void Setup(ItemType type, Sprite sprite, Color color) {
-            Type = type;
-            spriteRenderer.sprite = sprite;
-            spriteRenderer.color = color;
-            
+        private int _originalSortingLayerId;
+        private int _originalSortingOrder;
+
+        public void Setup(ItemData itemData) {
+            Type = itemData.type;
+            _spriteRenderer.sprite = itemData.sprite;
+
+            // Store original sorting values
+            _originalSortingLayerId = _spriteRenderer.sortingLayerID;
+            _originalSortingOrder = _spriteRenderer.sortingOrder;
+
             // Ensure proper layering/distance for clicks
             var localPos = transform.localPosition;
             localPos.z = -3f;
             transform.localPosition = localPos;
-            
+
             var localScale = transform.localScale;
             localScale.z = 1f;
             transform.localScale = localScale;
@@ -31,14 +38,24 @@ namespace _game._GameViews {
             rb.bodyType = RigidbodyType2D.Kinematic;
             rb.simulated = true;
 
-            if (itemCollider != null) {
-                itemCollider.enabled = true;
+            if (_itemCollider != null) {
+                _itemCollider.enabled = true;
             }
         }
 
+        public void SetSortingLayer(string layerName) {
+            _spriteRenderer.sortingLayerName = layerName;
+            _spriteRenderer.sortingOrder = 100; // Put it on top of other things in that layer
+        }
+
+        public void ResetSortingLayer() {
+            _spriteRenderer.sortingLayerID = _originalSortingLayerId;
+            _spriteRenderer.sortingOrder = _originalSortingOrder;
+        }
+
         public void DisableInteraction() {
-            if (itemCollider != null) {
-                itemCollider.enabled = false;
+            if (_itemCollider != null) {
+                _itemCollider.enabled = false;
             }
         }
 

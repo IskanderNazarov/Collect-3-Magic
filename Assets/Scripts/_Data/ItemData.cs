@@ -5,8 +5,11 @@ using UnityEngine;
 namespace _Data {
     [Serializable]
     public class ItemData {
-        public ItemType type;
+        [SingleEnum] public ItemType type;
         public Sprite sprite;
         public Color color;
+    }
+
+    public class SingleEnumAttribute : PropertyAttribute {
     }
 }
