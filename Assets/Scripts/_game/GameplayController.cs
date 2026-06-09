@@ -36,9 +36,12 @@ namespace _game {
             _gameplayConfig = gameplayConfig;
         }
 
+        public bool IsInputBlocked { get; set; }
+
         public void Initialize() {
             InitializePools();
             _view.SlotsDock.Initialize(_view.Slots);
+            IsInputBlocked = false;
             GenerateLevel();
         }
 
@@ -79,27 +82,19 @@ namespace _game {
 
                 if (!_bubblePools.TryGetValue(size, out var pool)) {
                     Debug.LogError($"[GameplayController] No pool for bubble size {size}");
-                    index++; 
+                    index++;
                     continue;
                 }
-
-                var bubbleView = pool.Get();
-                bubbleView.Setup(size);
-
-                // Position in lanes to avoid overlap
-                var spawnX = -_levelConfig.bubbleSpawnWidth + (index % spawnLaneCount * laneWidth) + (laneWidth * 0.5f);
-                
-                // Position at current lane height
-                bubbleView.transform.position = new Vector3(spawnX, laneHeights[index % spawnLaneCount], 0);
-                
-                // Update height for this lane
-                var verticalGap = count > 1 ? 3.5f : 2.5f;
-                laneHeights[index % spawnLaneCount] += verticalGap;
 
                 var bubbleModel = new BubbleModel {
                     Size = size
                 };
                 _model.Bubbles.Add(bubbleModel);
+
+                var bubbleView = pool.Get();
+                bubbleView.Setup(bubbleModel);
+
+                // Position in lanes to avoid overlap
 
                 for (var i = 0; i < count; i++) {
                     var type = itemsToPack[index++];
@@ -122,18 +117,18 @@ namespace _game {
             var possibleConfigs = _levelConfig.bubbleWeights
                 .Where(w => w.itemsCount <= remainingItems)
                 .ToList();
-            
+
             if (possibleConfigs.Count == 0) return null;
-            
+
             float totalWeight = possibleConfigs.Sum(w => w.weight);
             float randomValue = Random.Range(0, totalWeight);
             float currentSum = 0;
-            
+
             foreach (var config in possibleConfigs) {
                 currentSum += config.weight;
                 if (randomValue <= currentSum) return config;
             }
-            
+
             return possibleConfigs.Last();
         }
 
@@ -150,7 +145,8 @@ namespace _game {
 
                     if (!isLocked) {
                         UpdateContainerTarget(view, model);
-                    } else {
+                    }
+                    else {
                         view.ClearTarget();
                     }
                 }
@@ -177,7 +173,6 @@ namespace _game {
             foreach (var type in _levelConfig.availableTypes) {
                 var totalOnBoard = itemCounts.ContainsKey(type) ? itemCounts[type] : 0;
                 
-                // Calculate how many are already "booked" by OTHER active containers
                 var bookedByOthers = 0;
                 foreach (var otherContainer in _model.Containers) {
                     if (otherContainer != model && otherContainer.IsOccupied && otherContainer.TargetType == type) {
@@ -192,7 +187,8 @@ namespace _game {
 
             if (candidates.Count > 0) {
                 var targetType = candidates[Random.Range(0, candidates.Count)];
-
+                Debug.Log($"[GameplayController] Container assigned new target: {targetType}. Candidates found: {candidates.Count}. Board count for this type: {itemCounts[targetType]}");
+                
                 // Pick a critter that can request this item
                 var critterData = _gameplayConfig.CritterDataList
                     .Where(c => (c.AllowedItems & targetType) != 0 || c.AllowedItems == ItemType.All)
@@ -212,6 +208,7 @@ namespace _game {
                 });
             }
             else {
+                Debug.Log("[GameplayController] No candidates for container. Keeping it empty.");
                 model.Clear();
                 view.ClearTarget();
             }
@@ -219,7 +216,7 @@ namespace _game {
 
         private Dictionary<ItemType, int> GetGlobalItemCounts() {
             var counts = new Dictionary<ItemType, int>();
-            
+
             // From bubbles
             foreach (var bubble in _model.Bubbles) {
                 foreach (var item in bubble.Items) {
@@ -229,7 +226,7 @@ namespace _game {
                     }
                 }
             }
-            
+
             // From dock
             foreach (var item in _view.SlotsDock.GetAllItems()) {
                 if (!counts.ContainsKey(item.Type)) counts[item.Type] = 0;
@@ -259,6 +256,8 @@ namespace _game {
         }
 
         private void HandleItemClick(ItemView itemView) {
+            if (IsInputBlocked) return;
+
             var bubbleView = itemView.GetComponentInParent<BubbleView>();
             if (bubbleView == null) return;
 
@@ -292,7 +291,8 @@ namespace _game {
             if (bubbleView.IsEmpty) {
                 if (_bubblePools.TryGetValue(bubbleView.Size, out var pool)) {
                     pool.Release(bubbleView);
-                } else {
+                }
+                else {
                     Debug.LogError($"[GameplayController] No pool to release bubble size {bubbleView.Size}");
                 }
             }
@@ -308,6 +308,11 @@ namespace _game {
 
             containerModel.ReserveItem();
 
+            // If it's the 3rd item, scale down the cloud while flying
+            if (index == 2) {
+                containerView.ScaleCloud(false, TravelDuration);
+            }
+
             // Change layer for flight
             itemView.SetSortingLayer(_gameplayConfig.TopSortingLayer);
 
@@ -318,7 +323,13 @@ namespace _game {
                 containerView.ShowLandedItem(index, data);
 
                 if (containerModel.AllLanded) {
-                    HandleContainerMatch(containerModel, containerView);
+                    // Small delay before scaling critter down
+                    DOVirtual.DelayedCall(0.5f, () => {
+                        containerView.HideItemVisuals();
+                        containerView.ScaleCritter(false, 0.3f, () => {
+                            HandleContainerMatch(containerModel, containerView);
+                        });
+                    });
                 }
 
                 // Return to pool and reset layer
@@ -332,7 +343,7 @@ namespace _game {
                 var containerModel = _model.Containers[i];
                 var containerView = _view.Containers[i];
 
-                if (!containerView.gameObject.activeSelf || containerModel.IsLocked || !containerModel.IsOccupied) 
+                if (!containerView.gameObject.activeSelf || containerModel.IsLocked || !containerModel.IsOccupied)
                     continue;
 
                 var needed = 3 - containerModel.ReservedCount;
@@ -347,11 +358,12 @@ namespace _game {
         }
 
         private void UpdateModelOnItemCollected(ItemView itemView, BubbleView bubbleView) {
-            var bubbleModel =
-                _model.Bubbles.FirstOrDefault(bm => bm.Items.Any(im => im.Type == itemView.Type && !im.IsCollected));
+            var bubbleModel = bubbleView.Model;
             if (bubbleModel != null) {
-                var itemModel = bubbleModel.Items.First(im => im.Type == itemView.Type && !im.IsCollected);
-                itemModel.IsCollected = true;
+                var itemModel = bubbleModel.Items.FirstOrDefault(im => im.Type == itemView.Type && !im.IsCollected);
+                if (itemModel != null) {
+                    itemModel.IsCollected = true;
+                }
 
                 if (bubbleModel.Items.All(im => im.IsCollected)) {
                     _model.Bubbles.Remove(bubbleModel);
@@ -395,24 +407,89 @@ namespace _game {
         private void HandleContainerMatch(ContainerModel model, ContainerView view) {
             _model.CompletedMatchesCount++;
             
-            // Try to find a new target for this container
-            UpdateContainerTarget(view, model);
+            // Mark the model as not occupied anymore so RefreshAllCritters knows it needs a new target
+            model.Clear();
+            // We don't call view.ClearTarget here because the critter is already at scale 0 
+            // and we want to immediately start the appearing animation if a new target is found.
             
-            // Also trigger check for any other unoccupied and unlocked containers 
-            // that might have been waiting for items to become available
+            RefreshAllCritters();
+            CheckWinCondition();
+        }
+
+        private void RefreshAllCritters() {
             for (var i = 0; i < _model.Containers.Count; i++) {
-                var otherModel = _model.Containers[i];
-                if (!otherModel.IsOccupied && !otherModel.IsLocked) {
-                    UpdateContainerTarget(_view.Containers[i], otherModel);
+                var containerModel = _model.Containers[i];
+                var containerView = _view.Containers[i];
+                
+                if (containerModel.IsLocked) continue;
+
+                if (!containerModel.IsOccupied) {
+                    UpdateContainerTarget(containerView, containerModel);
+                }
+                else {
+                    var type = containerModel.TargetType;
+                    var totalOnBoard = GetTotalItemCount(type);
+                    var bookedByOthers = 0;
+                    foreach (var other in _model.Containers) {
+                        if (other != containerModel && other.IsOccupied && other.TargetType == type) {
+                            bookedByOthers += (3 - other.ReservedCount);
+                        }
+                    }
+
+                    if (totalOnBoard - bookedByOthers < (3 - containerModel.ReservedCount)) {
+                        containerModel.Clear();
+                        containerView.ClearTarget();
+                        UpdateContainerTarget(containerView, containerModel);
+                    }
                 }
             }
         }
 
+        public List<BubbleView> GetAllActiveBubbles() {
+            return GameObject.FindObjectsByType<BubbleView>(FindObjectsSortMode.None)
+                .Where(b => b.gameObject.activeSelf).ToList();
+        }
+
+        public void ManualRemoveItem(ItemView itemView) {
+            var bubbleView = itemView.GetComponentInParent<BubbleView>();
+            if (bubbleView != null) {
+                bubbleView.RemoveItem(itemView);
+                if (bubbleView.IsEmpty) {
+                    if (_bubblePools.TryGetValue(bubbleView.Size, out var pool)) {
+                        pool.Release(bubbleView);
+                    }
+                }
+            }
+
+            UpdateModelOnItemCollected(itemView, bubbleView);
+            _itemPool.Release(itemView);
+            
+            RefreshAllCritters();
+            CheckWinCondition();
+        }
+
+        public int GetTotalItemCount(ItemType type) {
+            var counts = GetGlobalItemCounts();
+            return counts.ContainsKey(type) ? counts[type] : 0;
+        }
+
+        public int GetTotalBookedCount(ItemType type) {
+            var booked = 0;
+            foreach (var container in _model.Containers) {
+                if (container.IsOccupied && container.TargetType == type) {
+                    booked += (3 - container.ReservedCount);
+                }
+            }
+            return booked;
+        }
+
         private void CheckWinCondition() {
-            var targetMatches = _levelConfig.totalItemsCount / 3;
-            if (_model.CompletedMatchesCount >= targetMatches) {
+            var boardEmpty = _model.Bubbles.Count == 0 && _view.SlotsDock.OccupiedCount == 0;
+
+            if (boardEmpty) {
+                Debug.Log($"[GameplayController] Win condition triggered. Bubbles={_model.Bubbles.Count}, Dock={_view.SlotsDock.OccupiedCount}");
                 _signalBus.Fire<LevelCompletedSignal>();
             }
         }
-    }
+}
 }

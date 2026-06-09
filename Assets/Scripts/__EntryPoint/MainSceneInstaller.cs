@@ -1,4 +1,5 @@
 using _Data;
+using _Infrastructure._Boosters;
 using _UI;
 using _game;
 using _game._GameViews;
@@ -12,15 +13,18 @@ namespace _Zenject {
         [SerializeField] private GameplayView _gameplayView;
         [SerializeField] private LevelConfig _levelConfig;
         [SerializeField] private GameplayConfig _gameplayConfig;
+        [SerializeField] private BoosterVisualService _boosterVisualService;
 
         public override void InstallBindings() {
             Container.BindInstance(_uiManager).AsSingle();
             Container.BindInstance(_gameplayView).AsSingle();
             Container.BindInstance(_levelConfig).AsSingle();
             Container.BindInstance(_gameplayConfig).AsSingle();
+            Container.BindInstance(_boosterVisualService).AsSingle();
             
             Container.BindInterfacesAndSelfTo<GameplayController>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<GameManager>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<BoosterUseService>().AsSingle().NonLazy();
         }
     }
 }

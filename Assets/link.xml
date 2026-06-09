@@ -3,9 +3,10 @@
     </assembly>
     <assembly fullname="CoreLib" preserve="all">
     </assembly>
+    
     <assembly fullname="FXAARuntime" preserve="all">
     </assembly>
-    <assembly fullname="GamePush.Runtime" preserve="all">
+    <assembly fullname="GamePush" preserve="all">
     </assembly>
 
     <assembly fullname="Zenject" preserve="all"/>

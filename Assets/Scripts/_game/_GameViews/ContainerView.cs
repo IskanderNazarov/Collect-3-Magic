@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _Data;
 using DG.Tweening;
@@ -47,10 +48,10 @@ namespace _game._GameViews {
             // Swap animation sequence
             Sequence swapSequence = DOTween.Sequence();
             
-            // 1. Scale down current
-            swapSequence.Append(_critterIcon.transform.DOScale(0, _scaleDuration).SetEase(Ease.InBack));
+            // 1. Ensure initial state
+            _critterIcon.transform.localScale = Vector3.zero;
             if (_targetIconRenderer != null) {
-                swapSequence.Join(_targetIconRenderer.transform.parent.DOScale(0, _scaleDuration).SetEase(Ease.InBack));
+                _targetIconRenderer.transform.parent.localScale = Vector3.zero;
             }
 
             // 2. Change visuals and scale up
@@ -73,15 +74,27 @@ namespace _game._GameViews {
             return swapSequence;
         }
 
-        public void ClearTarget() {
-            TargetType = ItemType.None;
-            _critterIcon.transform.DOScale(0, _scaleDuration).SetEase(Ease.InBack);
+        public void ScaleCloud(bool visible, float duration) {
             if (_targetIconRenderer != null) {
-                _targetIconRenderer.transform.parent.DOScale(0, _scaleDuration).SetEase(Ease.InBack);
+                _targetIconRenderer.transform.parent.DOScale(visible ? 1f : 0f, duration).SetEase(Ease.InOutQuad);
             }
+        }
+
+        public void ScaleCritter(bool visible, float duration, Action onComplete = null) {
+            _critterIcon.transform.DOScale(visible ? 1f : 0f, duration).SetEase(visible ? _scaleEase : Ease.InBack).OnComplete(() => onComplete?.Invoke());
+        }
+
+        public void HideItemVisuals() {
             foreach (var renderer in _itemRenderers) {
                 renderer.gameObject.SetActive(false);
             }
+        }
+
+        public void ClearTarget() {
+            TargetType = ItemType.None;
+            ScaleCritter(false, _scaleDuration);
+            ScaleCloud(false, _scaleDuration);
+            HideItemVisuals();
         }
 
         public void ShowLandedItem(int index, ItemData data) {

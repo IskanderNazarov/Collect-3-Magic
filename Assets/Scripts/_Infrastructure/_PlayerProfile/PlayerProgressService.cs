@@ -29,6 +29,12 @@ public class PlayerProgressService : SaveManager<PlayerSaveData> {
         SaveImmediate();
     }
 
+    public void AddStars(int count) {
+        Data.CurrentStars += count;
+        MarkDirty();
+        SaveImmediate();
+    }
+
     public bool TryConsumeCoins(int count) {
         if (Data.CurrentCoins < count) return false;
         Data.CurrentCoins -= count;

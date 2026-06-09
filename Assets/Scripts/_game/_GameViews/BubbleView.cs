@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _game._GameModel;
 using UnityEngine;
 
 namespace _game._GameViews {
@@ -8,10 +9,15 @@ namespace _game._GameViews {
         [SerializeField] private List<SlotView> itemSlots;
 
         public BubbleSize Size { get; private set; }
+        public BubbleModel Model { get; private set; }
+        public IReadOnlyList<ItemView> Items => _items;
+        public IReadOnlyList<SlotView> Slots => itemSlots;
+        public int Capacity => itemSlots.Count;
         private readonly List<ItemView> _items = new List<ItemView>();
 
-        public void Setup(BubbleSize size) {
-            Size = size;
+        public void Setup(BubbleModel model) {
+            Model = model;
+            Size = model.Size;
             _items.Clear();
             gameObject.SetActive(true);
             rb.linearVelocity = Vector2.zero;

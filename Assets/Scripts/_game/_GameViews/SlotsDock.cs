@@ -70,10 +70,10 @@ namespace _game._GameViews {
         private void ShiftItems() {
             for (var i = 0; i < _items.Count; i++) {
                 var targetSlot = _slotPositions[i];
-                var targetPos = targetSlot.transform.position;
+                var targetPos = targetSlot.ItemTargetPos.position;
                 targetPos.z = transform.position.z - 3f;
                 
-                var targetScale = targetSlot.transform.localScale;
+                var targetScale = targetSlot.ItemTargetPos.localScale;
 
                 _items[i].transform.DOMove(targetPos, 0.3f).SetEase(Ease.OutQuad);
                 _items[i].transform.DOScale(targetScale, 0.3f).SetEase(Ease.OutQuad);

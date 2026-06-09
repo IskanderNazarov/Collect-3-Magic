@@ -1,6 +1,6 @@
-﻿namespace __Gameplay {
+namespace __Gameplay {
     public enum BoosterId {
         Shuffle = 0,
-        Remover = 0,
+        Remover = 1,
     }
 }
