@@ -8,6 +8,7 @@ namespace _Data {
         public CritterType critterType;
         public Sprite CritterSprite;
         // Flags to define which items this critter can request. 
-        public ItemType AllowedItems = ItemType.All; 
+        public ItemType AllowedItems = ItemType.All;
+        public int StarsToUnlock;
     }
 }

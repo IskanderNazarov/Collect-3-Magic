@@ -35,6 +35,13 @@ public class PlayerProgressService : SaveManager<PlayerSaveData> {
         SaveImmediate();
     }
 
+    public void IncrementLevel() {
+        Data.CurrentLevelIndex++;
+        MarkDirty();
+        SaveImmediate();
+        OnLevelChanged?.Invoke(Data.CurrentLevelIndex);
+    }
+
     public bool TryConsumeCoins(int count) {
         if (Data.CurrentCoins < count) return false;
         Data.CurrentCoins -= count;

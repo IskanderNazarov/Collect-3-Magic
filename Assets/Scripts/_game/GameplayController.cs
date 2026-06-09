@@ -113,6 +113,55 @@ namespace _game {
             InitializeContainers();
         }
 
+        public void PerformShuffle() {
+            var activeBubbles = GetAllActiveBubbles();
+            var pairs = new List<(ItemView view, ItemModel model)>();
+
+            // 1. Collect all view-model pairs from all bubbles
+            foreach (var bubble in activeBubbles) {
+                var bubbleViews = bubble.Items.ToList();
+                var bubbleModel = bubble.Model;
+                
+                // Models that are NOT collected yet
+                var uncollectedModels = bubbleModel.Items.Where(im => !im.IsCollected).ToList();
+                
+                foreach (var view in bubbleViews) {
+                    // Match by type
+                    var model = uncollectedModels.FirstOrDefault(m => m.Type == view.Type);
+                    if (model != null) {
+                        pairs.Add((view, model));
+                        uncollectedModels.Remove(model);
+                    }
+                    bubble.RemoveItem(view);
+                }
+                
+                // Clear the logical list in the model too
+                bubbleModel.Items.RemoveAll(m => !m.IsCollected);
+            }
+
+            // 2. Randomize
+            var shuffledPairs = pairs.OrderBy(x => Random.value).ToList();
+
+            // 3. Redistribute into available slots
+            int pairIdx = 0;
+            foreach (var bubble in activeBubbles) {
+                int capacity = bubble.Capacity;
+                var bubbleModel = bubble.Model;
+
+                for (int i = 0; i < capacity && pairIdx < shuffledPairs.Count; i++) {
+                    var pair = shuffledPairs[pairIdx++];
+                    
+                    // Update View WITHOUT snapping (so we can animate)
+                    bubble.AddItem(pair.view, false);
+                    
+                    // Update Model
+                    bubbleModel.Items.Add(pair.model);
+                }
+            }
+            
+            RefreshAllCritters();
+        }
+
         private BubbleSpawnWeight PickRandomBubbleWeight(int remainingItems) {
             var possibleConfigs = _levelConfig.bubbleWeights
                 .Where(w => w.itemsCount <= remainingItems)
@@ -359,12 +408,25 @@ namespace _game {
 
         private void UpdateModelOnItemCollected(ItemView itemView, BubbleView bubbleView) {
             var bubbleModel = bubbleView.Model;
+            ItemModel itemModel = null;
+            
             if (bubbleModel != null) {
-                var itemModel = bubbleModel.Items.FirstOrDefault(im => im.Type == itemView.Type && !im.IsCollected);
-                if (itemModel != null) {
-                    itemModel.IsCollected = true;
-                }
+                itemModel = bubbleModel.Items.FirstOrDefault(im => im.Type == itemView.Type && !im.IsCollected);
+            }
 
+            // Fallback: If not found in the provided bubble (e.g. after a shuffle), search ALL bubbles
+            if (itemModel == null) {
+                foreach (var bm in _model.Bubbles) {
+                    itemModel = bm.Items.FirstOrDefault(im => im.Type == itemView.Type && !im.IsCollected);
+                    if (itemModel != null) {
+                        bubbleModel = bm;
+                        break;
+                    }
+                }
+            }
+
+            if (itemModel != null) {
+                itemModel.IsCollected = true;
                 if (bubbleModel.Items.All(im => im.IsCollected)) {
                     _model.Bubbles.Remove(bubbleModel);
                 }
@@ -406,9 +468,10 @@ namespace _game {
 
         private void HandleContainerMatch(ContainerModel model, ContainerView view) {
             _model.CompletedMatchesCount++;
+            _signalBus.Fire<MatchCompletedSignal>();
             
             // Mark the model as not occupied anymore so RefreshAllCritters knows it needs a new target
-            model.Clear();
+model.Clear();
             // We don't call view.ClearTarget here because the critter is already at scale 0 
             // and we want to immediately start the appearing animation if a new target is found.
             

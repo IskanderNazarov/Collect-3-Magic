@@ -24,17 +24,25 @@ namespace _game._GameViews {
             rb.angularVelocity = 0f;
         }
 
-        public void AddItem(ItemView item) {
+        public void AddItem(ItemView item, bool snap = true) {
             if (_items.Count >= itemSlots.Count) return;
 
             var slot = itemSlots[_items.Count];
+            var oldGlobalPos = item.transform.position;
+            var oldGlobalRot = item.transform.rotation;
+            
             item.transform.SetParent(slot.transform);
             
-            // Enforce Z position and scale
-            item.transform.localPosition = new Vector3(0, 0, -3f);
-            var localScale = item.transform.localScale;
-            localScale.z = 1f;
-            item.transform.localScale = localScale;
+            if (snap) {
+                item.transform.localPosition = new Vector3(0, 0, -3f);
+                var localScale = item.transform.localScale;
+                localScale.z = 1f;
+                item.transform.localScale = localScale;
+                item.transform.localRotation = Quaternion.identity;
+            } else {
+                item.transform.position = oldGlobalPos;
+                item.transform.rotation = oldGlobalRot;
+            }
             
             _items.Add(item);
         }

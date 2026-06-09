@@ -12,6 +12,7 @@ public class PlayerSaveData {
     public int CurrentCoins = 110;
     public int BigStars = 0;
     public int UnlockedPlanetsCount = 0;
+    public int UnlockedCrittersCount = 1; // Initially the first critter is unlocked
 
     // serialized state for MetaProgressionService
     public string MetaProgressionStateJson = "";

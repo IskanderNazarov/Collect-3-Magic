@@ -10,8 +10,9 @@ namespace _Zenject {
             Container.DeclareSignal<LevelStartedSignal>();
             Container.DeclareSignal<LevelCompletedSignal>();
             Container.DeclareSignal<LevelFailedSignal>();
+            Container.DeclareSignal<MatchCompletedSignal>();
             Container.DeclareSignal<ItemCollectedSignal>();
-            Container.DeclareSignal<CoinsChangedSignal>();
+Container.DeclareSignal<CoinsChangedSignal>();
             Container.DeclareSignal<UseBoosterSignal>();
             Container.DeclareSignal<ShowBuyBoosterSignal>();
         }

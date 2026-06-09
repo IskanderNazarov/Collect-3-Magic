@@ -1,4 +1,5 @@
 using _Data;
+using _Infrastructure;
 using _Infrastructure._Boosters;
 using _UI;
 using _game;
@@ -25,6 +26,7 @@ namespace _Zenject {
             Container.BindInterfacesAndSelfTo<GameplayController>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<GameManager>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<BoosterUseService>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<MetaProgressionService>().AsSingle().NonLazy();
         }
     }
 }

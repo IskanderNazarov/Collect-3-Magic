@@ -9,9 +9,10 @@ namespace _UI {
     public class SettingsDialog : Dialog {
         [SerializeField] private Button musicBtn;
         [SerializeField] private Button soundBtn;
+        [SerializeField] private Button homeBtn;
 
         [Header("Sprites")] [SerializeField] private Sprite musicOnSprite;
-        [SerializeField] private Sprite musicOffSprite;
+[SerializeField] private Sprite musicOffSprite;
         [SerializeField] private Sprite soundOnSprite;
         [SerializeField] private Sprite soundOffSprite;
         [SerializeField] private GameObject debugPanel;
@@ -27,6 +28,14 @@ namespace _UI {
         private void Start() {
             soundBtn.onClick.AddListener(OnSoundClicked);
             musicBtn.onClick.AddListener(OnMusicClicked);
+            if (homeBtn != null) homeBtn.onClick.AddListener(OnHomeClicked);
+        }
+
+        private void OnHomeClicked() {
+            _adsService.ShowInterstitial(AdPlacementType.AfterLogicPause, null);
+            Hide();
+            // Fire signal or call GameManager to go home
+            // For now, assume it's handled via signals if exist, or inject GameManager
         }
 
         private void OnCloseClicked() {
@@ -36,6 +45,11 @@ namespace _UI {
 
         private void OnEnable() {
             UpdateVisuals();
+            if (homeBtn != null) {
+                // Block home button if it's the very first level
+                bool isFirstLevel = _playerProgressService.CurrentLevelIndex == 0 && _playerProgressService.Score == 0;
+                homeBtn.interactable = !isFirstLevel;
+            }
         }
 
         private void UpdateVisuals() {

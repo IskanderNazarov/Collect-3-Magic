@@ -59,15 +59,18 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: a6321b2ae0fc04c44a139d8f9d93733b, type: 3}
     color: {r: 0.97735846, g: 0.3557585, b: 0.3557585, a: 0.87058824}
   _critterDataList:
-  - CritterType: 0
+  - critterType: 0
     CritterSprite: {fileID: 21300000, guid: ffac171176908404da28b5c6ed44ace9, type: 3}
     AllowedItems: -1
-  - CritterType: 1
+    StarsToUnlock: 1
+  - critterType: 0
     CritterSprite: {fileID: 21300000, guid: e23cd737686534ee1a6e3e112e73f147, type: 3}
     AllowedItems: -1
-  - CritterType: 2
+    StarsToUnlock: 2
+  - critterType: 0
     CritterSprite: {fileID: 21300000, guid: fc564e2f2901447a3a630f77b209fa80, type: 3}
     AllowedItems: -1
+    StarsToUnlock: 2
   GameplaySortingLayer: Gameplay
   TopSortingLayer: Top
   DockSortingLayer: DockLayer

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -50,6 +50,13 @@ namespace _UI {
 
         public T GetScreen<T>() where T : BaseScreen {
             return screens.FirstOrDefault(s => s is T) as T;
+        }
+
+        public void HideAllScreens() {
+            foreach (var screen in screens) {
+                screen.HideImmediate();
+            }
+            _currentScreen = null;
         }
     }
 }

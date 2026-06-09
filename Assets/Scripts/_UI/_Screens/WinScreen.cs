@@ -1,3 +1,5 @@
+using System;
+using _Infrastructure;
 using core.ads;
 using TMPro;
 using UnityEngine;
@@ -18,6 +20,8 @@ namespace _UI {
         [Inject] private PlayerProgressService _playerProgress;
         [Inject] private IAdsService _adsService;
 
+        [Inject] private MetaProgressionService _metaService;
+
         private void Start() {
             _claimButton.onClick.AddListener(Claim);
             _claim2xButton.onClick.AddListener(Claim2x);
@@ -26,6 +30,12 @@ namespace _UI {
         public void Setup(int coins, int stars) {
             _baseCoins = coins;
             _baseStars = stars;
+            
+            // Hide Claim2x until at least 2 critters are unlocked (Rabbit + 1 more)
+            if (_claim2xButton != null) {
+                _claim2xButton.gameObject.SetActive(_metaService.UnlockedCrittersCount >= 2);
+            }
+
             UpdateUI();
         }
 

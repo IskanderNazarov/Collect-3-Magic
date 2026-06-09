@@ -1,10 +1,13 @@
-using _Signals;
-using Zenject;
-using _Infrastructure._Analytics;
-using core.ads;
 using System;
+using _Infrastructure;
+using _Infrastructure._Analytics;
+using _Infrastructure._Boosters;
+using _Signals;
+using _UI;
+using core.ads;
 using DG.Tweening;
 using UnityEngine;
+using Zenject;
 
 namespace _game {
     public enum GameState {
@@ -22,19 +25,21 @@ namespace _game {
         private readonly PlayerProgressService _playerProgress;
         private readonly IAdsService _adsService;
         private readonly IAnalyticsService _analyticsService;
-        private readonly _UI.UIManager _uiManager;
-        private readonly _Infrastructure._Boosters.BoosterUseService _boosterUseService;
+        private readonly UIManager _uiManager;
+        private readonly BoosterUseService _boosterUseService;
+        private readonly MetaProgressionService _metaService;
 
         public GameState CurrentState { get; private set; }
 
         public GameManager(
-            SignalBus signalBus, 
-            GameplayController gameplayController, 
+            SignalBus signalBus,
+            GameplayController gameplayController,
             PlayerProgressService playerProgress,
-            IAdsService adsService, 
+            IAdsService adsService,
             IAnalyticsService analyticsService,
-            _UI.UIManager uiManager,
-            _Infrastructure._Boosters.BoosterUseService boosterUseService) {
+            UIManager uiManager,
+            BoosterUseService boosterUseService,
+            MetaProgressionService metaService) {
             _signalBus = signalBus;
             _gameplayController = gameplayController;
             _playerProgress = playerProgress;
@@ -42,6 +47,7 @@ namespace _game {
             _analyticsService = analyticsService;
             _uiManager = uiManager;
             _boosterUseService = boosterUseService;
+            _metaService = metaService;
         }
 
         public void Initialize() {
@@ -50,7 +56,24 @@ namespace _game {
             _signalBus.Subscribe<UseBoosterSignal>(OnUseBooster);
             _signalBus.Subscribe<ShowBuyBoosterSignal>(OnShowBuyBooster);
 
-            StartGame();
+            // First time user flow: go directly to Level 1
+            if (_playerProgress.CurrentLevelIndex == 0 && _playerProgress.Score == 0) {
+                StartGame();
+            } else {
+                ShowMeta();
+            }
+        }
+
+        private void ShowMeta(int coinsEarned = 0, int starsEarned = 0) {
+            ChangeState(GameState.None);
+            _uiManager.HideAllScreens();
+            var mainScreen = _uiManager.ShowScreen<MainScreen>();
+            if (mainScreen != null) {
+                mainScreen.SetPlayAction(StartGame);
+                if (coinsEarned > 0 || starsEarned > 0) {
+                    mainScreen.AnimateRewards(coinsEarned, starsEarned, null);
+                }
+            }
         }
 
         public void Dispose() {
@@ -67,13 +90,16 @@ namespace _game {
         }
 
         private void OnShowBuyBooster(ShowBuyBoosterSignal signal) {
-            var dialog = _uiManager.ShowScreen<_UI.BuyBoosterDialog>();
+            var dialog = _uiManager.ShowScreen<BuyBoosterDialog>();
             if (dialog != null) {
                 dialog.Setup(signal.BoosterId);
             }
         }
 
         private void StartGame() {
+            _uiManager.HideAllScreens();
+            _uiManager.ShowScreen<GameUI>();
+
             ChangeState(GameState.Setup);
             _gameplayController.Initialize();
 
@@ -84,17 +110,20 @@ namespace _game {
 
         private void OnLevelCompleted() {
             if (CurrentState == GameState.Win) return;
-            
+
             ChangeState(GameState.Win);
             _analyticsService.LogEvent("level_finish", _playerProgress.CurrentLevelIndex.ToString());
 
-            // Sequence: delay for animations -> darken (implicit via WinScreen or explicit) -> show WinScreen
+            // Sequence: delay for animations -> show WinScreen
             DOVirtual.DelayedCall(1.5f, () => {
-                var winScreen = _uiManager.ShowScreen<_UI.WinScreen>();
+                var winScreen = _uiManager.ShowScreen<WinScreen>(false);
                 if (winScreen != null) {
-                    winScreen.Setup(20, 5); // 20 coins, 5 stars (placeholder)
+                    int coins = 20;
+                    int stars = 1;
+                    winScreen.Setup(coins, stars); 
                     winScreen.OnClosed += () => {
-                        // Level progression can happen here
+                        _playerProgress.IncrementLevel();
+                        ShowMeta(coins, stars);
                     };
                 }
             });
@@ -102,7 +131,7 @@ namespace _game {
 
         private void OnLevelFailed() {
             if (CurrentState == GameState.Lose) return;
-            
+
             ChangeState(GameState.Lose);
             _analyticsService.LogEvent("level_fail", _playerProgress.CurrentLevelIndex.ToString());
         }

@@ -6,8 +6,10 @@ namespace _Signals {
     public class LevelCompletedSignal { }
     public class LevelFailedSignal { }
     
+    public class MatchCompletedSignal { }
+    
     public class ItemCollectedSignal { 
-        public int ItemId { get; }
+public int ItemId { get; }
         public bool ToContainer { get; }
         
         public ItemCollectedSignal(int itemId, bool toContainer) {

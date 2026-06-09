@@ -44,15 +44,17 @@ public class BoosterVisualService : MonoBehaviour {
             sequence.Append(_catPawLeft.DOMove(Vector3.zero, 0.5f).SetEase(Ease.OutBack));
             sequence.Join(_catPawRight.DOMove(Vector3.zero, 0.5f).SetEase(Ease.OutBack));
 
+            // Perform Logical Shuffle and Animate Items
+            sequence.AppendCallback(() => PerformAnimatedShuffle(sequence, 0.5f));
+
             // Chaotic movement
             for (int i = 0; i < 4; i++) {
                 sequence.Append(_catPawLeft.DOMove(new Vector3(Random.Range(-3, 3), Random.Range(-3, 3), -5), 0.2f));
                 sequence.Join(_catPawRight.DOMove(new Vector3(Random.Range(-3, 3), Random.Range(-3, 3), -5), 0.2f));
             }
+        } else {
+            PerformAnimatedShuffle(sequence, 0);
         }
-
-        // 2. Perform animated shuffle
-        PerformShuffle(sequence);
 
         if (_catPawLeft != null && _catPawRight != null) {
             sequence.Append(_catPawLeft.DOMove(new Vector3(-10, 0, -5), 0.5f).SetEase(Ease.InBack));
@@ -69,48 +71,21 @@ public class BoosterVisualService : MonoBehaviour {
         });
     }
 
-    private void PerformShuffle(Sequence sequence) {
-        var bubbles = _gameplayController.GetAllActiveBubbles();
-        var allItems = new List<ItemView>();
-        
-        foreach (var bubble in bubbles) {
-            var itemsInBubble = bubble.Items.ToList();
-            allItems.AddRange(itemsInBubble);
-            foreach (var item in itemsInBubble) {
-                bubble.RemoveItem(item);
+    private void PerformAnimatedShuffle(Sequence sequence, float startTime) {
+        // 1. Execute Logical Shuffle (Updates models and parents views to new slots WITHOUT snapping)
+        _gameplayController.PerformShuffle();
+
+        // 2. Identify all items now parented to bubbles and animate them to their new local positions
+        var activeBubbles = _gameplayController.GetAllActiveBubbles();
+        foreach (var bubble in activeBubbles) {
+            foreach (var item in bubble.Items) {
+                // item is now parented to its NEW slot, but physically at its OLD position.
+                // We animate it to localPosition (0, 0, -3).
+                // We DO NOT change sorting layer as per user request.
+                sequence.Insert(startTime, item.transform.DOLocalMove(new Vector3(0, 0, -3f), 0.8f).SetEase(Ease.InOutQuad));
+                sequence.Insert(startTime, item.transform.DOLocalRotate(Vector3.zero, 0.8f).SetEase(Ease.InOutQuad));
             }
         }
-
-        // Shuffle items
-        var shuffledItems = allItems.OrderBy(x => Random.value).ToList();
-
-        // Animate to new positions
-        var itemIndex = 0;
-        foreach (var bubble in bubbles) {
-            for (int i = 0; i < bubble.Capacity && itemIndex < shuffledItems.Count; i++) {
-                var item = shuffledItems[itemIndex++];
-                var targetSlot = bubble.Slots[i];
-                
-                // Ensure they are on a high layer during shuffle
-                item.SetSortingLayer("Top");
-                
-                sequence.Join(item.transform.DOMove(targetSlot.transform.position, 0.6f).SetEase(Ease.InOutQuad));
-                sequence.Join(item.transform.DORotate(new Vector3(0, 0, Random.Range(-20, 20)), 0.6f));
-            }
-        }
-
-        // Finalize parenting and logic state
-        sequence.AppendCallback(() => {
-            itemIndex = 0;
-            foreach (var bubble in bubbles) {
-                int count = Mathf.Min(bubble.Capacity, shuffledItems.Count - itemIndex);
-                for (int i = 0; i < count; i++) {
-                    var item = shuffledItems[itemIndex++];
-                    bubble.AddItem(item);
-                    item.ResetSortingLayer();
-                }
-            }
-        });
     }
 
     public void ExecuteRemover(Action onComplete) {
@@ -161,26 +136,21 @@ public class BoosterVisualService : MonoBehaviour {
             _magicWand.gameObject.SetActive(true);
             _magicWand.position = new Vector3(8, 10, -5);
             
-            // 1. Semi-circle arc movement
+            // Continuous path: Arc then Plunge
             Vector3[] path = new Vector3[] {
                 new Vector3(8, 10, -5),
-                new Vector3(0, 14, -5),
-                new Vector3(-8, 10, -5)
+                new Vector3(0, 15, -5),
+                new Vector3(-8, 10, -5),
+                new Vector3(-5, -20, -5)
             };
             
-            sequence.Append(_magicWand.DOPath(path, 1.2f, PathType.CatmullRom).SetEase(Ease.InOutSine));
+            sequence.Append(_magicWand.DOPath(path, 1.8f, PathType.CatmullRom).SetEase(Ease.InOutQuad));
             
-            // 2. Start flying down
-            sequence.Append(_magicWand.DOMove(offScreenBottom, 0.8f).SetEase(Ease.InBack));
-            
-            // 3. Items follow the wand down
+            // Items follow when descent starts (approx halfway through path)
             foreach (var item in matchingItems) {
-                // Use Insert to start exactly when wand starts moving down (at 1.2s mark)
-                sequence.Insert(1.2f, item.transform.DOMove(offScreenBottom, 1f).SetEase(Ease.InQuad));
-                sequence.Insert(1.2f, item.transform.DORotate(new Vector3(0, 0, 360), 1f, RotateMode.FastBeyond360));
-                
-                // Ensure they are visible above bubbles
-                sequence.InsertCallback(1.2f, () => item.SetSortingLayer("Top"));
+                // No sorting layer change as requested
+                sequence.Insert(0.9f, item.transform.DOMove(offScreenBottom, 1.2f).SetEase(Ease.InQuad));
+                sequence.Insert(0.9f, item.transform.DORotate(new Vector3(0, 0, 720), 1.2f, RotateMode.FastBeyond360));
             }
         }
 
